@@ -1,34 +1,89 @@
-# filters
+# Mobile Robot Localization using EKF and Particle Filter (PF)
 
-The starter code is written in Python and depends on NumPy and Matplotlib.
-This README gives a brief overview of each file.
+This project implements and compares two probabilistic algorithms for localizing a mobile robot in a 2D soccer field: **Extended Kalman Filter (EKF)** and **Particle Filter (PF)**.
 
-- `localization.py` -- This is your main entry point for running experiments.
-- `soccer_field.py` -- This implements the dynamics and observation functions, as well as the noise models for both. Add your Jacobian implementations here!
-- `utils.py` -- This contains assorted plotting functions, as well as a useful
-  function for normalizing angles.
-- `policies.py` -- This contains a simple policy, which you can safely ignore.
-- `ekf.py` -- Add your extended Kalman filter implementation here!
-- `pf.py` -- Add your particle filter implementation here!
+The robot uses noisy odometry and bearing-only observations of known landmarks to estimate its pose.
 
-## Command-Line Interface
+## Repository Structure
 
-To visualize the robot in the soccer field environment, run
-```bash
-$ python localization.py --plot none
 ```
-The blue line traces out the robot's position, which is a result of noisy actions.
-The green line traces the robot's position assuming that actions weren't noisy.
-
-After you implement a filter, the filter's estimate of the robot's position will be drawn in red.
-```bash
-$ python localization.py --plot ekf
-$ python localization.py --plot pf
+EKF-PF/
+├── *.py                 # All source code files (EKF, PF, models, main runner)
+├── Dockerfile           # Docker container definition to run everything easily
+├── requirements.txt     # Python dependencies
+├── output_plots/        # Screenshots and result visualizations from EKF & PF
+├── ekf_pf_REPORT.pdf    # Final report detailing theory, implementation & results
 ```
 
-You can scale the noise factors for the data generation process or the filters
-with the `--data-factor` and `--filter-factor` flags. To see other command-line
-flags available to you, run
+
+## Project Files
+
+| File | Description |
+|------|-------------|
+| `localization.py` | Main entry point for running experiments with EKF or PF |
+| `ekf.py`          | EKF implementation (prediction + correction) |
+| `pf.py`           | Particle Filter implementation (motion sampling, weighting, resampling) |
+| `soccer_field.py` | Models for motion, observation, noise, Jacobians |
+| `utils.py`        | Helper functions like angle normalization, plotting |
+| `policies.py`     | Robot motion policy (you can ignore this) |
+| `plotting_ekf.py` | Batch runs of EKF over different noise settings |
+| `plotting_pf.py`  | Batch runs of PF with varying particle count and noise |
+
+
+## Report and Results
+
+- `ekf_pf_report.pdf` includes:
+  - Theory and equations for EKF & PF
+  - Implementation details
+  - Experimental results and visualizations
+  - Discussion on accuracy, noise sensitivity, and particle count
+
+- `output_plots/` contains all graphs and screenshots used in the report.
+
+
+## Running without Docker
+
+You can also run the filters manually (if Python + dependencies are installed):
+
 ```bash
-$ python localization.py -h
+python localization.py ekf --plot
+python localization.py pf --plot
+python localization.py --plot none  # Just ground truth and odometry
 ```
+
+Noise parameters:
+```bash
+python localization.py ekf --data-factor 4 --filter-factor 4
+python localization.py pf --num-particles 100
+```
+
+## Running with Docker
+
+Ensure Docker is installed and running. Then, from the root folder (`EKF-PF/`), run:
+
+### Step 1: Build the Docker image
+
+```bash
+docker build -t robot-localizer .
+```
+
+### Step 2: Run both EKF and PF
+
+```bash
+docker run --rm robot-localizer
+```
+
+This will output results from EKF followed by PF with a clean separation.
+
+To run PF separately or change parameters, use:
+
+```bash
+docker run --rm robot-localizer python localization.py pf --plot
+```
+
+
+## Notes
+
+- EKF is efficient but sensitive to linearization and noise tuning.
+- PF handles non-Gaussian posteriors and multimodal beliefs but is computationally heavier.
+- Both filters were implemented using a shared motion and observation model (`soccer_field.py`).
